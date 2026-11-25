@@ -18,7 +18,10 @@ para o cliente enviar documentos (substituindo o WhatsApp).
 - `docs/Briefing_Escopo_MVP_Z4Motors.pdf`: escopo, MVP e critérios de aceite de cada
   funcionalidade. Em caso de dúvida sobre o que entra ou não, seguir esse documento.
 
-Leia esses documentos antes de criar ou alterar telas e funcionalidades.
+Este CLAUDE.md já resume escopo, regras e paleta: **não leia os PDFs em toda tarefa**
+(consome muito contexto). Abra o PDF visual só em tarefas de tela, e apenas a página da tela
+em questão (portal = página 4, login = 5, painel = 6, perfis = 7, auditoria = 8). Consulte o
+briefing só em caso de dúvida de escopo.
 
 ## Stack
 
