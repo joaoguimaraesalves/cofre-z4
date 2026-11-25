@@ -38,5 +38,5 @@ Para a apresentação: `cloudflared tunnel --url http://localhost:5173` e atuali
 > Todos os dados usados são fictícios.
 
 ## Equipe
-- _[Dev 1]_
-- _[Dev 2]_
+- João Victor Guimarães Alves – [@joaoguimaraesalves](https://github.com/joaoguimaraesalves)
+- João G. R. Rocha – [@joaogabrieldev](https://github.com/joaogabrieldev)
