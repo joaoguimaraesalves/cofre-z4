@@ -1,0 +1,32 @@
+# Segredos (NUNCA commitar)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Uploads e dados locais
+storage/
+uploads/
+*.sqlite3
+pgdata/
+
+# Sistema / editores
+.DS_Store
+.idea/
+.vscode/
+*.log
