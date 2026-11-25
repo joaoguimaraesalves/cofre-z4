@@ -23,9 +23,11 @@ Leia esses documentos antes de criar ou alterar telas e funcionalidades.
 ## Stack
 
 - Back-end: Python 3.12 + FastAPI + SQLAlchemy 2 + Alembic
-- Banco: PostgreSQL 16
+- Banco: PostgreSQL no **Neon** (produção = branch `main`; desenvolvimento = branch `dev`)
 - Front-end: React + Vite + TypeScript (painel interno e portal do cliente, responsivo)
-- Infra: Docker Compose (api, db, web, mailpit para e-mails de teste)
+- Hospedagem: **Render**, um único Web Service (FastAPI serve a API em `/api` e o React compilado)
+- E-mail: Resend (produção) / Mailpit (desenvolvimento local)
+- Dev local: Docker Compose (api, web, mailpit) apontando para o branch `dev` do Neon
 - Testes: pytest (back), OWASP ZAP (varredura de segurança)
 - Idioma: código em inglês; textos de interface e mensagens em português do Brasil
 
@@ -45,6 +47,9 @@ backend/
 frontend/
   src/pages/     Login, Dashboard, ClientDetail, Audit, Users, Portal/*
 docker-compose.yml
+Dockerfile        build multi-stage: compila o front e serve junto com a API
+render.yaml       blueprint do serviço no Render
+.github/workflows/  CI (testes) e cron diário da anonimização
 .env.example
 ```
 
@@ -70,7 +75,8 @@ docker-compose.yml
    o primeiro registro adulterado. Registrar: login, falha de login, consulta, revelar,
    criação/edição/exclusão, upload, download, geração e uso de link, anonimização.
 8. **Documentos**: aceitar só PDF, JPG e PNG, até 10 MB, validando a assinatura real do
-   arquivo (magic bytes), não a extensão. Armazenar criptografado fora da pasta pública.
+   arquivo (magic bytes), não a extensão. Armazenar criptografado (AES-256-GCM) em coluna
+   `bytea` no banco: o disco do Render é efêmero, então nada é gravado em disco.
    Download apenas por rota autenticada e autorizada.
 9. **Portal do cliente**: link com token aleatório de 32 bytes; no banco só o hash do token.
    Validade de 24h, uso único. Cliente confirma código de 6 dígitos enviado por e-mail
@@ -78,22 +84,29 @@ docker-compose.yml
    O portal só RECEBE dados; nunca exibe dados já armazenados.
 10. **LGPD**: registrar aceite do termo (data, hora, IP, versão). Job diário anonimiza
     clientes com prazo de retenção vencido. Coletar apenas os campos necessários.
-11. **Geral**: HTTPS (em dev via túnel), CORS restrito, cabeçalhos de segurança,
+11. **Geral**: HTTPS (Render), conexão com o Neon com `sslmode=require`, CORS restrito, cabeçalhos de segurança,
     validação de entrada com Pydantic, consultas só via ORM (sem SQL concatenado),
     rate limiting em login e portal, mensagens de erro sem detalhes internos.
 12. **Dados**: usar APENAS dados fictícios (seed com Faker pt_BR). Nunca dados reais.
 
-## Execução local + túnel (forma de apresentação)
+## Hospedagem (forma de apresentação)
 
-O sistema roda só no notebook e é exposto no dia da apresentação por Cloudflare Tunnel.
-
-- Expor apenas o front (porta 5173). O Vite faz proxy de `/api` para o back-end, então
-  front e API ficam no mesmo domínio (sem CORS entre domínios, cookie de sessão funcionando).
-- `vite.config.ts`: `server.host = true` e `server.allowedHosts = ['.trycloudflare.com', 'localhost']`.
-- O endereço do túnel muda a cada execução: nenhuma URL fixa no código. Os links do
-  portal enviados por e-mail usam a variável `PUBLIC_URL` do `.env`.
-- Cookies com `Secure` (o túnel entrega HTTPS). Em `localhost`, permitir via configuração de dev.
-- E-mails (código do portal) vão para o Mailpit (`http://localhost:8025`); não usar SMTP real.
+- **Render**: um Web Service a partir do `Dockerfile`. O FastAPI monta `/api` e serve o
+  build do React nas demais rotas (fallback para `index.html`). Front e API no mesmo
+  domínio: sem CORS entre domínios, cookie de sessão `Secure` + `SameSite=Strict`.
+- **Neon**: `DATABASE_URL` com `sslmode=require` (usar a URL *pooled*). Migrações com
+  Alembic rodam no comando de release/start do Render. Branch `dev` para desenvolvimento,
+  `main` para a apresentação.
+- **Segredos**: só nas variáveis de ambiente do Render (e no `.env` local, fora do Git):
+  `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, `BLIND_INDEX_KEY`, `JWT_SECRET`,
+  `RESEND_API_KEY`, `PUBLIC_URL`, `CRON_SECRET`.
+- **Links do portal**: montados a partir de `PUBLIC_URL` (nunca URL fixa no código).
+- **Anonimização LGPD**: endpoint `POST /api/admin/jobs/anonymize` protegido por
+  `CRON_SECRET` (header), chamado 1x/dia por GitHub Actions agendado. O gerente também
+  pode disparar pela interface (gera auditoria).
+- **Plano grátis do Render**: o serviço dorme após inatividade; endpoint `/api/health`
+  leve para "acordar" antes da apresentação.
+- **Health check**: `/api/health` (sem dados sensíveis).
 
 ## Convenções
 
@@ -104,15 +117,15 @@ O sistema roda só no notebook e é exposto no dia da apresentação por Cloudfl
 
 ## Comandos
 
-- Subir tudo: `docker compose up --build`
+- Dev local: `docker compose up --build` (usa o branch `dev` do Neon via `.env`)
 - Migrações: `docker compose exec api alembic upgrade head`
-- Seed: `docker compose exec api python -m app.seed`
+- Seed (dados fictícios): `docker compose exec api python -m app.seed`
 - Testes: `docker compose exec api pytest`
-- Portal no celular (demo): `cloudflared tunnel --url http://localhost:5173`
+- Deploy: push na `main` → Render faz o deploy automático
 
 ## Roteiro da demonstração (o sistema precisa suportar)
 
-1. Mostrar no banco que os campos sensíveis estão ilegíveis.
+1. Mostrar no console SQL do Neon que os campos sensíveis estão ilegíveis.
 2. Mesmo cliente visto como vendedor e como analista.
 3. Chamada direta à API com perfil errado → 403.
 4. Link de portal usado/expirado → bloqueado.

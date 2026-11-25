@@ -16,7 +16,7 @@ o cliente enviar documentos sem passar pelo WhatsApp.
 6. Portal de envio (link temporário de uso único)
 
 ## Stack
-FastAPI · PostgreSQL · React + Vite · Docker Compose · OWASP ZAP
+FastAPI · PostgreSQL (Neon) · React + Vite · Render · OWASP ZAP
 
 ## Como rodar
 ```bash
@@ -25,10 +25,10 @@ docker compose up --build
 docker compose exec api alembic upgrade head
 docker compose exec api python -m app.seed
 ```
-- Sistema: http://localhost:5173
+- Sistema: http://localhost:8000
 - E-mails de teste (Mailpit): http://localhost:8025
 
-Para a apresentação: `cloudflared tunnel --url http://localhost:5173` e atualizar `PUBLIC_URL` no `.env`.
+Produção: deploy automático no Render a cada push na `main`, com banco no Neon.
 
 ## Documentação
 - `docs/Briefing_Escopo_MVP_Z4Motors.pdf`: escopo e MVP
